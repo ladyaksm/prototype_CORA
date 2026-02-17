@@ -9,40 +9,45 @@ def render_chat():
 
     # FIXED HEADER CSS
     st.markdown("""
-               <style>
-               /* Hilangkan padding atas bawaan */
-               .block-container {
-               padding-top: 0rem !important;
-               }
+<style>
 
-/* Header */
+/* Hide default Streamlit header */
+[data-testid="stHeader"] {
+    display: none;
+}
+
+/* Remove top padding */
+.block-container {
+    padding-top: 0rem !important;
+}
+
+/* Custom Header */
 .header-fixed {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 16rem;
     right: 0;
     background-color: #0E1117;
     padding: 20px 40px;
-    z-index: 1000;
+    z-index: 9999;
     border-bottom: 1px solid #262730;
-    display: flex;
-    align-items: center;
 }
 
-/* Title style */
+/* Title */
 .header-title {
     color: white;
     font-size: 20px;
     font-weight: 600;
 }
 
-/* Biar chat gak ketiban */
+/* Push content down */
 .chat-container {
     margin-top: 90px;
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 
     st.markdown("""
@@ -75,7 +80,7 @@ def render_chat():
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🚀 Mau Generate Blueprint?"):
+            if st.button("Mau Generate Blueprint?"):
 
                 template_response = """
 Draft Blueprint Corporate University

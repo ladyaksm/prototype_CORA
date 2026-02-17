@@ -66,8 +66,6 @@ elif st.session_state.page == "chat":
 
     # SIDEBAR
     with st.sidebar:
-        st.write(f"👤 {st.session_state.username}")
-        st.divider()
 
         if st.button("Logout"):
             for key in list(st.session_state.keys()):
