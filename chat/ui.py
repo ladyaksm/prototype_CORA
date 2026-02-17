@@ -13,7 +13,7 @@ def render_chat():
 
 /* Hide default Streamlit header */
 [data-testid="stHeader"] {
-    display: none;
+    background: transparent;
 }
 
 /* Remove top padding */
