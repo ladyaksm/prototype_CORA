@@ -1,6 +1,6 @@
 import streamlit as st
 from utils.auth import login, register
-from chat.init import render_chat
+from chat.ui import render_chat
 
 
 if "authenticated" not in st.session_state:
