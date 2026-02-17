@@ -1,9 +1,8 @@
 import streamlit as st
 from utils.auth import login, register
-from chat import render_chat
+from chat.init import render_chat
 
 
-# ini state 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
@@ -14,7 +13,7 @@ if "username" not in st.session_state:
     st.session_state.username = ""
 
 
-# login
+# LOGIN / REGISTER
 if not st.session_state.authenticated:
 
     if st.session_state.page == "login":
@@ -28,21 +27,19 @@ if not st.session_state.authenticated:
 
         with col1:
             if st.button("Login"):
-                success = login(username, password)
-                if not success:
-                    st.error("Username atau password salah")
-                else:
+                if login(username, password):
                     st.session_state.authenticated = True
                     st.session_state.page = "chat"
                     st.session_state.username = username
                     st.rerun()
+                else:
+                    st.error("Username atau password salah")
 
         with col2:
             if st.button("Register"):
                 st.session_state.page = "register"
                 st.rerun()
 
-    # regsiter
     elif st.session_state.page == "register":
 
         st.title("CORA Register")
@@ -54,8 +51,7 @@ if not st.session_state.authenticated:
 
         with col1:
             if st.button("Create Account"):
-                success = register(new_username, new_password)
-                if success:
+                if register(new_username, new_password):
                     st.success("Akun berhasil dibuat. Silakan login.")
                 else:
                     st.error("Username sudah digunakan.")
@@ -65,21 +61,17 @@ if not st.session_state.authenticated:
                 st.session_state.page = "login"
                 st.rerun()
 
-
-# chat page
+# CHAT PAGE
 elif st.session_state.page == "chat":
 
-    # logout button di atas
-    col1, col2 = st.columns([6,1])
-    with col2:
-        if st.button("Logout"):
-            st.session_state.authenticated = False
-            st.session_state.page = "login"
+    # SIDEBAR
+    with st.sidebar:
+        st.write(f"👤 {st.session_state.username}")
+        st.divider()
 
-            # Reset session chat juga
+        if st.button("Logout"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-
             st.rerun()
 
     render_chat()

@@ -1,75 +1,81 @@
 import streamlit as st
-import tempfile
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.lib.pagesizes import A4
+from .state import init_chat_state
+from .pdf import generate_pdf
 
 
-# function generate pdf
-def generate_pdf(content):
-
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    doc = SimpleDocTemplate(temp_file.name, pagesize=A4)
-
-    elements = []
-    styles = getSampleStyleSheet()
-
-    elements.append(Paragraph("<b>CORA Blueprint Report</b>", styles["Title"]))
-    elements.append(Spacer(1, 0.5 * inch))
-
-    for line in content.split("\n"):
-        elements.append(Paragraph(line, styles["Normal"]))
-        elements.append(Spacer(1, 0.2 * inch))
-
-    doc.build(elements)
-
-    return temp_file.name
-
-# function render chat 
 def render_chat():
 
-    st.title("CORA - Corporate University Assistant")
+    init_chat_state()
 
-    # init state 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    # FIXED HEADER CSS
+    st.markdown("""
+               <style>
+               /* Hilangkan padding atas bawaan */
+               .block-container {
+               padding-top: 0rem !important;
+               }
 
-    if "chat_count" not in st.session_state:
-        st.session_state.chat_count = 0
+/* Header */
+.header-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #0E1117;
+    padding: 20px 40px;
+    z-index: 1000;
+    border-bottom: 1px solid #262730;
+    display: flex;
+    align-items: center;
+}
 
-    if "show_blueprint_button" not in st.session_state:
-        st.session_state.show_blueprint_button = False
+/* Title style */
+.header-title {
+    color: white;
+    font-size: 20px;
+    font-weight: 600;
+}
 
-    if "blueprint_generated" not in st.session_state:
-        st.session_state.blueprint_generated = False
+/* Biar chat gak ketiban */
+.chat-container {
+    margin-top: 90px;
+}
 
-    if "blueprint_content" not in st.session_state:
-        st.session_state.blueprint_content = ""
+</style>
+""", unsafe_allow_html=True)
 
-    if "interaction_locked" not in st.session_state:
-        st.session_state.interaction_locked = False
 
-    # greeting
+    st.markdown("""
+<div class="header-fixed">
+    <div class="header-title">
+        CORA - Corporate University Assistant
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+
+    # Greeting
     if len(st.session_state.messages) == 0:
         st.markdown("### Hai, aku CORA 👋")
         st.markdown("Aku akan menemanimu merancang Corporate University sebelum sesi konsultasi profesional.")
 
-    # chat history
+    # Chat history
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # cek apakah sudah mencapai batas interaksi 
+    # Show blueprint button after 5 chats
     if st.session_state.chat_count >= 5 and not st.session_state.blueprint_generated:
         st.session_state.show_blueprint_button = True
 
-    # button generate blueprint 
+    # Generate Blueprint Button
     if st.session_state.show_blueprint_button and not st.session_state.blueprint_generated:
 
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button(" Mau Generate Blueprint?"):
+            if st.button("🚀 Mau Generate Blueprint?"):
 
                 template_response = """
 Draft Blueprint Corporate University
@@ -89,28 +95,28 @@ Ini masih hanya prototipe, nanti akan dikembangkan lagi ya...
                 st.session_state.interaction_locked = True
                 st.rerun()
 
-    # setelah blueprint di-generate,\
+    # After Blueprint Generated
     if st.session_state.blueprint_generated:
 
         st.markdown("---")
 
         col1, col2 = st.columns(2)
 
-        # button untuk sesi konsultasi
+        # Konsultasi
         with col1:
             if st.button("🗣 Chat Sesi Konsultasi"):
 
-                consult_msg = "Silahkan anda menghubungi contact berikut ....."
+                consult_msg = "Silahkan hubungi tim kami untuk sesi konsultasi lanjutan."
 
                 st.session_state.messages.append({
                     "role": "assistant",
                     "content": consult_msg
                 })
 
-                st.session_state.interaction_locked = True  # lock chat
+                st.session_state.interaction_locked = True
                 st.rerun()
 
-        # button untuk export blueprint ke PDF
+        # Export PDF
         with col2:
             pdf_path = generate_pdf(st.session_state.blueprint_content)
 
@@ -121,15 +127,14 @@ Ini masih hanya prototipe, nanti akan dikembangkan lagi ya...
                     file_name="CORA_Blueprint.pdf",
                     mime="application/pdf"
                 ):
-                    st.session_state.interaction_locked = True  # lock chat
+                    st.session_state.interaction_locked = True
                     st.rerun()
 
-
-    # menutup interaksi jika sudah selesai
+    # Lock message
     if st.session_state.interaction_locked:
         st.info("Sesi telah selesai. Untuk memulai ulang, silakan refresh halaman.")
 
-    # chat input untuk user  jika interaksi belum di-lock
+    # Chat input
     prompt = st.chat_input(
         "Tanyakan sesuatu tentang Corporate University...",
         disabled=st.session_state.interaction_locked
@@ -152,3 +157,5 @@ Ini masih hanya prototipe, nanti akan dikembangkan lagi ya...
         })
 
         st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
