@@ -54,19 +54,18 @@ if not st.session_state.authenticated:
                 if register(new_username, new_password):
                     st.success("Akun berhasil dibuat. Silakan login.")
                 else:
-                    st.error("Username sudah digunakan.")
+                    st.error("Gagal membuat akun.")
 
         with col2:
             if st.button("Back to Login"):
                 st.session_state.page = "login"
                 st.rerun()
 
+
 # CHAT PAGE
 elif st.session_state.page == "chat":
 
-    # SIDEBAR
     with st.sidebar:
-
         if st.button("Logout"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]

@@ -4,6 +4,7 @@ def init_chat_state():
     defaults = {
         "messages": [],
         "chat_count": 0,
+        "show_file_uploader": False,
         "show_blueprint_button": False,
         "blueprint_generated": False,
         "blueprint_content": "",
