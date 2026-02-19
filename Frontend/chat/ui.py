@@ -1,11 +1,32 @@
 import streamlit as st
 from .state import init_chat_state
 from .pdf import generate_pdf
+import html
+import requests
 
+BASE_URL = "http://localhost:8000"
 
 def render_chat():
 
     init_chat_state()
+
+    if len(st.session_state.messages) == 0:
+        try:
+            response = requests.get(f"{BASE_URL}/chat/history")
+            if response.status_code == 200:
+                history = response.json()
+                for item in history:
+                    st.session_state.messages.append({
+                        "role": "user",
+                        "content": item["message"]
+                    })
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": item["botResponse"]
+                })
+        except:
+            pass
+
 
     # FIXED HEADER CSS
     st.markdown("""
@@ -45,6 +66,40 @@ def render_chat():
     margin-top: 90px;
 }
 
+.chat-bubble {
+    padding: 12px 18px;
+    border-radius: 18px;
+    margin-bottom: 12px;
+    max-width: 70%;
+    word-wrap: break-word;
+    font-size: 15px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(5px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+.user-bubble {
+    background-color: #2563eb;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+.assistant-bubble {
+    background-color: #1f2937;
+    color: white;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+
+.chat-row {
+    display: flex;
+}
+
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -68,8 +123,26 @@ def render_chat():
 
     # Chat history
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        safe_content = html.escape(msg["content"])
+        
+        if msg["role"] == "user":
+            st.markdown(f"""
+        <div class="chat-row">
+            <div class="chat-bubble user-bubble">
+                {safe_content}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+        <div class="chat-row">
+            <div class="chat-bubble assistant-bubble">
+                {safe_content}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 
     # Show blueprint button after 5 chats
     if st.session_state.chat_count >= 5 and not st.session_state.blueprint_generated:
@@ -82,11 +155,15 @@ def render_chat():
         with col2:
             if st.button("Mau Generate Blueprint?"):
 
-                template_response = """
-Draft Blueprint Corporate University
+                try:
+                    response = requests.post(f"{BASE_URL}/chat/blueprint")
+                    if response.status_code == 200:
+                        template_response = response.json()
+                    else:
+                        template_response = "Gagal generate blueprint."
 
-Ini masih hanya prototipe, nanti akan dikembangkan lagi ya...
-"""
+                except:
+                    template_response = "Server tidak dapat dihubungi."
 
                 st.session_state.blueprint_content = template_response
                 st.session_state.blueprint_generated = True
@@ -111,7 +188,14 @@ Ini masih hanya prototipe, nanti akan dikembangkan lagi ya...
         with col1:
             if st.button("🗣 Chat Sesi Konsultasi"):
 
-                consult_msg = "Silahkan hubungi tim kami untuk sesi konsultasi lanjutan."
+                try:
+                    response = requests.get(f"{BASE_URL}/chat/consult")
+                    if response.status_code == 200:
+                        consult_msg = response.json()["contact"]
+                    else:
+                        consult_msg = "Gagal mengambil kontak."
+                except:
+                    consult_msg = "Server tidak dapat dihubungi."
 
                 st.session_state.messages.append({
                     "role": "assistant",
@@ -154,11 +238,23 @@ Ini masih hanya prototipe, nanti akan dikembangkan lagi ya...
 
         st.session_state.chat_count += 1
 
-        response = "Terima kasih atas pertanyaannya. CORA akan membantu kebutuhan awal Anda."
+        try:
+            response = requests.post(
+                f"{BASE_URL}/chat/message",
+                json={"message": prompt}
+    )
+
+            if response.status_code == 200:
+                bot_reply = response.json()
+            else:
+                bot_reply = "Terjadi kesalahan pada server."
+
+        except Exception as e:
+            bot_reply = "Server tidak dapat dihubungi."
 
         st.session_state.messages.append({
             "role": "assistant",
-            "content": response
+            "content": bot_reply
         })
 
         st.rerun()
