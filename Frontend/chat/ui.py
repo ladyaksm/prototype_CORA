@@ -214,10 +214,6 @@ def render_chat():
     if st.session_state.interaction_locked:
         st.info("Sesi telah selesai. Untuk memulai ulang, silakan refresh halaman.")
 
-    # ─────────────────────────────────────────────
-    # CHAT INPUT AREA WITH "+" PDF UPLOAD BUTTON
-    # ─────────────────────────────────────────────
-
     # Layout: kolom kecil buat tombol "+", kolom besar buat chat input
     col_plus, col_input = st.columns([1, 11])
 
