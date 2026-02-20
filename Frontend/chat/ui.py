@@ -60,54 +60,44 @@ def render_chat():
     }
     .chat-row { display: flex; }
 
-    /* ── st.chat_input selalu fixed di bottom oleh Streamlit ──
-       Kita kasih padding-left supaya ada ruang untuk tombol +   */
-    [data-testid="stChatInput"] {
-        padding-left: 3.5rem !important;
-    }
+    /* ── Fix gap abu-abu di kolom tombol + ── */
 
-    /* Tombol + di-fixed di bottom-left, sejajar dengan chat input */
-    div[data-testid="stBottom"] {
-        position: relative;
+    /* Hapus background & padding dari stBottom (area fixed bawah) */
+    [data-testid="stBottom"] {
+        background: transparent !important;
+        padding: 0 !important;
     }
-
-    /* Sembunyikan tombol + bawaan Streamlit dari layout normal,
-       lalu inject posisi fixed via wrapper */
-    #upload-btn-wrapper {
-        position: fixed;
-        bottom: 1rem;
-        /* Ikuti lebar sidebar: sidebar terbuka ~16rem, 
-           tambah sedikit padding kiri konten ~1rem */
-        left: calc(16rem + 1.2rem);
-        z-index: 99999;
+    /* Hapus background kolom kecil tempat tombol + */
+    [data-testid="stBottom"] [data-testid="stHorizontalBlock"] {
+        gap: 4px !important;
+        align-items: flex-end !important;
+        background: transparent !important;
     }
-    #upload-btn-wrapper button {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        border: 1.5px solid #d1d5db;
-        background: white;
-        font-size: 18px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #6b7280;
-        transition: all 0.2s;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    [data-testid="stBottom"] [data-testid="column"] {
+        background: transparent !important;
+        padding: 0 !important;
     }
-    #upload-btn-wrapper button:hover {
-        color: #2563eb;
-        border-color: #2563eb;
+    /* Styling tombol + */
+    [data-testid="stBottom"] [data-testid="column"]:first-child button {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        font-size: 20px !important;
+        border: 1.5px solid #d1d5db !important;
+        background: white !important;
+        color: #6b7280 !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1) !important;
+        min-height: unset !important;
+        margin-bottom: 6px !important;
     }
-
-    /* Kalau sidebar ditutup, geser tombol ke kiri */
-    [data-testid="stSidebarCollapsed"] ~ * #upload-btn-wrapper {
-        left: 1.2rem;
+    [data-testid="stBottom"] [data-testid="column"]:first-child button:hover {
+        color: #2563eb !important;
+        border-color: #2563eb !important;
+        background: #f0f4ff !important;
     }
     </style>
     """, unsafe_allow_html=True)
-
 
     # HEADER
     st.markdown("""
@@ -186,9 +176,7 @@ def render_chat():
     if st.session_state.interaction_locked:
         st.info("Sesi telah selesai. Untuk memulai ulang, silakan refresh halaman.")
 
-    # INPUT AREA: tombol "+" sejajar dengan st.chat_input
-
-    # File uploader muncul DI ATAS row input kalau toggle aktif
+    # FILE UPLOADER — muncul di atas chat input kalau toggle aktif
     if st.session_state.get("show_file_uploader", False) and not st.session_state.interaction_locked:
         uploaded_file = st.file_uploader(
             "Pilih file PDF",
@@ -200,32 +188,33 @@ def render_chat():
             if st.session_state.pending_pdf_name != uploaded_file.name:
                 st.session_state.pending_pdf = uploaded_file.read()
                 st.session_state.pending_pdf_name = uploaded_file.name
-
         if st.session_state.pending_pdf_name:
             st.caption(f"📎 **{st.session_state.pending_pdf_name}** siap dikirim — tulis pesan lalu tekan Enter.")
 
-    # Row: [tombol +] [chat input]
-    col_plus, col_chat = st.columns([1, 20])
-
-    with col_plus:
-        if not st.session_state.interaction_locked:
-            if st.button("➕", key="btn_upload_toggle", help="Upload PDF ke CORA"):
+    # CHAT INPUT
+    # Pakai st.columns tapi CSS di atas sudah hapus background abu-abu
+    if not st.session_state.interaction_locked:
+        col_plus, col_chat = st.columns([1, 12])
+        with col_plus:
+            if st.button("＋", key="btn_upload_toggle", help="Upload PDF ke CORA"):
                 st.session_state.show_file_uploader = not st.session_state.get("show_file_uploader", False)
-                # Reset pending kalau uploader ditutup
                 if not st.session_state.show_file_uploader:
                     st.session_state.pending_pdf = None
                     st.session_state.pending_pdf_name = None
                 st.rerun()
-
-    with col_chat:
+        with col_chat:
+            prompt = st.chat_input(
+                "Tanyakan sesuatu tentang Corporate University...",
+                disabled=False
+            )
+    else:
         prompt = st.chat_input(
             "Tanyakan sesuatu tentang Corporate University...",
-            disabled=st.session_state.interaction_locked
+            disabled=True
         )
 
-    # HANDLE SEND — kirim teks + PDF bareng
+    # HANDLE SEND
     if prompt:
-        # Pesan user di history: teks + nama file kalau ada PDF
         user_display = prompt
         if st.session_state.pending_pdf_name:
             user_display = f"{prompt}\n📎 {st.session_state.pending_pdf_name}"
@@ -233,26 +222,22 @@ def render_chat():
         st.session_state.messages.append({"role": "user", "content": user_display})
         st.session_state.chat_count += 1
 
-        # Upload PDF kalau ada pending
         if st.session_state.pending_pdf is not None:
             with st.spinner("Mengupload PDF..."):
                 pdf_response = upload_pdf(st.session_state.pending_pdf, st.session_state.pending_pdf_name)
-
             if pdf_response and pdf_response.status_code == 200:
                 pdf_data = pdf_response.json()
                 if pdf_data.get("status") == "success":
-                    # ✅ Pakai message dari response API langsung
                     notif_msg = pdf_data.get("message", "PDF berhasil diunggah.")
                     st.session_state.messages.append({"role": "assistant", "content": f"📄 {notif_msg}"})
                     st.session_state.pending_pdf = None
                     st.session_state.pending_pdf_name = None
                     st.session_state.show_file_uploader = False
                 else:
-                    st.error("Upload PDF gagal: " + pdf_data.get("message", "Unknown error"))
+                    st.session_state.messages.append({"role": "assistant", "content": "❌ Gagal upload PDF: " + pdf_data.get("message", "Unknown error")})
             else:
-                st.error("Gagal upload PDF ke server.")
+                st.session_state.messages.append({"role": "assistant", "content": "❌ Gagal menghubungi server saat upload PDF."})
 
-        # Kirim pesan ke /chat/message
         response = api_request("POST", "/chat/message", {"chatUser": prompt})
         if response and response.status_code == 200:
             bot_reply = response.json().get("response", "Tidak ada balasan.")
