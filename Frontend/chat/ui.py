@@ -27,21 +27,26 @@ def render_chat():
     # CSS FIXED HEADER + CHAT UI
     st.markdown("""
     <style>
+    /* Override Streamlit native header — selalu full width otomatis */
     [data-testid="stHeader"] {
-        background: transparent;
+        background-color: #0E1117 !important;
+        border-bottom: 1px solid #262730 !important;
+        z-index: 9999 !important;
     }
+
+    /* Toolbar area di dalam header (kanan atas) */
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
+
     .block-container {
         padding-top: 0rem !important;
     }
+
+    /* Header custom — ikut di dalam stHeader supaya auto responsive */
     .header-fixed {
-        position: fixed;
-        top: 0;
-        left: 16rem;
-        right: 0;
+        padding: 14px 40px;
         background-color: #0E1117;
-        padding: 20px 40px;
-        z-index: 9999;
-        border-bottom: 1px solid #262730;
     }
     .header-title {
         color: white;
@@ -49,7 +54,7 @@ def render_chat():
         font-weight: 600;
     }
     .chat-container {
-        margin-top: 90px;
+        margin-top: 20px;
     }
     .chat-bubble {
         padding: 12px 18px;
@@ -107,16 +112,23 @@ def render_chat():
     </style>
     """, unsafe_allow_html=True)
 
-    # HEADER
+    # HEADER — inject title ke native stHeader
     st.markdown("""
-    <div class="header-fixed">
-        <div class="header-title">
-            CORA - Corporate University Assistant
-        </div>
-    </div>
+    <style>
+    [data-testid="stHeader"]::before {
+        content: "CORA - Corporate University Assistant";
+        display: block;
+        color: white;
+        font-size: 20px;
+        font-weight: 600;
+        padding: 16px 40px;
+        font-family: inherit;
+        text-align: center;
+    }
+    </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    st.markdown('<div class="chat-container" style="margin-top: 80px;">', unsafe_allow_html=True)
 
     # GREETING
     if len(st.session_state.messages) == 0:
@@ -213,6 +225,8 @@ def render_chat():
     # SESSION LOCK INFO
     if st.session_state.interaction_locked:
         st.info("Sesi telah selesai. Untuk memulai ulang, silakan refresh halaman.")
+
+    # CHAT INPUT AREA WITH "+" PDF UPLOAD BUTTON
 
     # Layout: kolom kecil buat tombol "+", kolom besar buat chat input
     col_plus, col_input = st.columns([1, 11])
