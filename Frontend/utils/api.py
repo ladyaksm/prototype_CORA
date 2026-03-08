@@ -30,7 +30,7 @@ def upload_pdf(file_bytes, filename):
     if "token" in st.session_state:
         headers["Authorization"] = f"Bearer {st.session_state.token}"
 
-    url = f"{BASE_URL}/chat/upload_PDF"
+    url = f"{BASE_URL}/message/upload-pdf"
 
     try:
         files = {

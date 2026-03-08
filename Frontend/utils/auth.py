@@ -1,48 +1,53 @@
-# Frontend/utils/auth.py
 import streamlit as st
-from .api import api_request
+import requests
 
+BASE_URL = "https://api-cora.mpkmb.com"
 
 def login(username, password):
+    # Login pake form-data (OAuth2PasswordRequestForm)
+    try:
+        response = requests.post(
+            f"{BASE_URL}/auth/login",
+            data={
+                "username": username,
+                "password": password
+            },
+            headers={"accept": "application/json"}
+        )
 
-    response = api_request(
-        "POST",
-        "/auth/login",
-        {"username": username, "password": password}
-    )
+        if response.status_code == 200:
+            data = response.json()
+            token = data.get("access_token")
+            if token:
+                st.session_state.token = token
+                return True
 
-    if not response:
         return False
 
-    if response.status_code == 200:
-        data = response.json()
-
-        # kalau backend return token string
-        if isinstance(data, str):
-            st.session_state.token = data
-            return True
-
-        # kalau backend return object success
-        if isinstance(data, dict) and data.get("status") == "success":
-            st.session_state.token = data.get("token")
-            return True
-
-        # kalau invalid credentials
-        if isinstance(data, dict) and data.get("status_code") == 401:
-            return False
-
-    return False
+    except Exception as e:
+        print("Login error:", e)
+        return False
 
 
 def register(username, password):
+    # Register pake query params
+    try:
+        response = requests.post(
+            f"{BASE_URL}/auth/register",
+            params={
+                "username": username,
+                "password": password
+            },
+            headers={"accept": "application/json"}
+        )
 
-    response = api_request(
-        "POST",
-        "/auth/register",
-        {"username": username, "password": password}
-    )
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("message") == "User created":
+                return True
 
-    if response and response.status_code == 200:
-        return True
+        return False
 
-    return False
+    except Exception as e:
+        print("Register error:", e)
+        return False
